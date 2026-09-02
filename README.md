@@ -112,6 +112,8 @@ Connect to `ws://<RASPBERRY_PI_IP>:3000/ws`. If `DASHBOARD_AUTH_TOKEN` is config
 
 Telemetry follows: validate → identify registered device/mine/location → persist raw payload → acknowledge → normalize → deterministic configured rules → optional local ML adapter → persist processed output → update aggregate mine assessment → broadcast.
 
+`models/risk-trend.js` is the shipped preventive model, enabled by default through `ML_MODEL_PATH`. It fits a least-squares trend per sensor over a rolling window, projects each one against the site-configured thresholds, and raises a two-stage alert — `caution` (default 24 minutes of lead time) and `evacuate` (10 minutes) — before the threshold is actually crossed. Correlated sensors vote on each trend using a measured correlation table (ch4↔o2 −0.85, airflow↔diff_pressure 0.86, redundant ch4 face/return 0.99), so a trend its physically coupled partners agree with is trusted more, and one they contradict is flagged `sensorFaultSuspected` instead. Retune `CORRELATED` and the lead times against your own mine's data. It reports no estimate it cannot measure.
+
 `MLProcessor` defines `predict(input)`. `LocalMLProcessor` loads a local JavaScript adapter from `ML_MODEL_PATH` whose module exports `predict(input)`. This is an integration boundary for a real ONNX, TensorFlow Lite, Python, or other local model adapter. No fake predictions are generated. Without a configured working adapter, ML is reported unavailable and collection/rules/dashboard continue working. The intended people/rescue estimates remain `null` until a validated model supplies them.
 
 ## Offline detection
@@ -125,5 +127,17 @@ npm test
 npm start
 npm run simulate:esp32
 ```
+
+For the demo stack - a separate gateway on port `3001` with its own database, plus simulated ESP32s - run the two together:
+
+```sh
+node scripts/start-demo-server.js      # or: npm run dev:demo
+npm run simulate:esp32:incident        # one zone degrades on a realistic ramp
+npm run simulate:esp32:risky           # pure noise; shows the model refusing to predict
+```
+
+`incident` is the scenario the preventive model exists for: North Tunnel's methane climbs while oxygen falls and CO rises, matching the measured correlation structure, so `/demo/` shows a real projection with lead time. The ramp cycles, so an unattended demo keeps replaying the pre-breach phase. `risky` stays random on purpose - the model reports those trends as too noisy to project rather than inventing a prediction. The demo gateway runs compressed lead times (`MODEL_CAUTION_LEAD_SECONDS=180`, `MODEL_EVACUATE_LEAD_SECONDS=60`) to match simulator speed.
+
+Both dashboards share a mine map (`dashboard/src/MineMap.jsx`) that lays out whatever locations are registered, and a risk projection chart (`dashboard/src/RiskProjection.jsx`) drawing the measured trend, the projected line, the threshold it is heading for, and the remaining lead time. A projection whose window elapsed without new telemetry is labelled expired rather than shown as a live countdown.
 
 The simulator registers three devices in Entrance, North Tunnel, and South Tunnel, then sends randomized telemetry every five seconds. For synthetic warning/critical readings used by the separate demo view, run `npm run simulate:esp32:risky` (the backend must have matching site-configured rules). Set `GATEWAY_URL` to target another Pi. Tests cover registration, validation, unknown/inactive devices, persistence, pagination, rules, dashboard state, WebSocket events, and ML-unavailable behavior.

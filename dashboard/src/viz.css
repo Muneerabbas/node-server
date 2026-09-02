@@ -1,0 +1,89 @@
+/* Design tokens for both dashboards.
+   Categorical slots and status colours are the validated data-viz palette, checked
+   with the skill's validator against this app's chart surface (#0d151e): all six
+   categorical slots pass the lightness band, chroma floor, CVD separation, normal
+   vision floor and 3:1 contrast. Status colours are the fixed status palette and
+   always ship with an icon or text label, never colour alone. */
+:root {
+  --surface-0: #0a1017;
+  --surface-1: #101923;
+  --surface-2: #16212d;
+  --chart-surface: #0d151e;
+  --line: #22303e;
+  --line-soft: #1a2734;
+
+  --ink: #eef4f9;
+  --ink-2: #b3c3d1;
+  --ink-3: #7d8fa0;
+
+  /* categorical - identity, assigned in fixed order, never cycled */
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #9085e9;
+
+  /* status - state, reserved, never used for a series */
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+
+  --font-sans: "Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius: 12px;
+}
+
+/* Type scale. Hero figures take proportional numerals; tabular figures are used
+   only where numbers stack vertically (table rows, axis ticks). */
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+.num-tabular, table td, table th, .recharts-cartesian-axis-tick text { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.num-hero { font-variant-numeric: proportional-nums; letter-spacing: -0.02em; }
+
+.viz-card {
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.viz-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 16px 18px 10px; }
+.viz-card-head h3 { margin: 2px 0 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
+.viz-kicker { font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.viz-readout { font-size: 22px; font-weight: 650; line-height: 1.1; color: var(--ink); }
+.viz-readout small { display: block; font-size: 11.5px; font-weight: 500; color: var(--ink-3); letter-spacing: .02em; margin-top: 3px; }
+.viz-body { padding: 4px 8px 10px; background: var(--chart-surface); }
+.viz-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 11px 18px; border-top: 1px solid var(--line-soft); font-size: 12.5px; color: var(--ink-3); }
+
+/* Tooltip - one surface, hairline border, tabular figures so values do not jitter */
+.viz-tip { background: rgba(10,16,23,.96); border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; font-size: 12.5px; box-shadow: 0 10px 28px rgba(0,0,0,.45); }
+.viz-tip-time { color: var(--ink-3); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 5px; }
+.viz-tip-row { display: flex; align-items: center; gap: 8px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.viz-tip-row i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.viz-tip-row span { color: var(--ink-2); }
+
+.viz-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; font-size: 12px; color: var(--ink-2); padding: 2px 18px 12px; }
+.viz-legend i { display: inline-block; width: 16px; height: 0; border-top-width: 2.5px; border-top-style: solid; vertical-align: middle; margin-right: 7px; }
+
+.viz-toggle { background: none; border: 1px solid var(--line); color: var(--ink-3); border-radius: 7px; padding: 4px 10px; font: inherit; font-size: 11.5px; cursor: pointer; }
+.viz-toggle:hover { color: var(--ink); border-color: #33455a; }
+.viz-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.viz-table th { text-align: left; font-weight: 600; color: var(--ink-3); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; padding: 8px 18px; border-bottom: 1px solid var(--line); }
+.viz-table td { padding: 6px 18px; color: var(--ink-2); border-bottom: 1px solid var(--line-soft); }
+.viz-table-wrap { max-height: 260px; overflow: auto; }
+
+.status-good { color: var(--status-good); }
+.status-warning { color: var(--status-warning); }
+.status-high, .status-serious { color: var(--status-serious); }
+.status-critical { color: var(--status-critical); }
+
+.viz-tier { text-transform: uppercase; letter-spacing: .07em; font-weight: 700; font-size: 10.5px; padding: 3px 9px; border-radius: 999px; border: 1px solid currentColor; }
+.viz-tier.tier-evacuate { color: var(--status-critical); }
+.viz-tier.tier-caution { color: var(--status-warning); }
+.viz-tier.tier-watch { color: var(--status-good); }
+.projection-card { grid-column: 1 / -1; }
+
+/* brand lockup: styles.css makes the inner div a flex row, so the two lines ran
+   together on one baseline. Higher specificity so import order cannot undo it. */
+.brand > div:last-child { flex-direction: column; align-items: flex-start; gap: 1px; }
+.brand > div:last-child span { font-size: 11.5px; color: var(--ink-3); letter-spacing: .02em; }
+.brand > div:last-child strong { font-size: 15px; letter-spacing: -.01em; }

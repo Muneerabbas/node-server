@@ -11,7 +11,8 @@
     "test": "node --test",
     "simulate:esp32": "node scripts/simulate-esp32.js",
     "simulate:esp32:risky": "SIMULATOR_SCENARIO=risky SIMULATOR_INTERVAL_MS=3000 node scripts/simulate-esp32.js",
-    "build:dashboard": "npm run build --prefix dashboard"
+    "build:dashboard": "npm run build --prefix dashboard",
+    "simulate:esp32:incident": "SIMULATOR_SCENARIO=incident SIMULATOR_INTERVAL_MS=3000 node scripts/simulate-esp32.js"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",

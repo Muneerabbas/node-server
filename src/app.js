@@ -4,6 +4,7 @@ import path from "node:path";
 import rateLimit from "express-rate-limit";
 import { validateRegistration, validateTelemetry } from "./validation/index.js";
 import { fail, ok, page, send } from "./utils/http.js";
+import { buildDisplay } from "./display.js";
 
 const mineView = (row) => row && ({ mineId: row.mine_id, name: row.name, description: row.description, location: row.location, createdAt: row.created_at, updatedAt: row.updated_at });
 const auth = (config) => (request, response, next) => { if (!config.dashboardAuthToken || request.get("x-dashboard-token") === config.dashboardAuthToken || request.get("authorization") === `Bearer ${config.dashboardAuthToken}`) return next(); return send(response, fail("UNAUTHORIZED", "Dashboard authentication required", 401)); };
@@ -47,6 +48,21 @@ export function createApp({ config, repository, deviceService, queue, processing
     }
   });
 
+  // Device-facing: an ESP32 polls this for what to render on its own screen. It
+  // authenticates as a device (its own token), not with the dashboard token, and a
+  // device may only ask about itself.
+  app.get("/api/v1/devices/:deviceId/display", (request, response) => {
+    const row = repository.getDeviceAny(request.params.deviceId);
+    if (!row || row.mine_id !== mineId) return send(response, fail("NOT_FOUND", "Device not found", 404));
+    if (!deviceService.authenticate(request, row)) return send(response, fail("UNAUTHORIZED", "Invalid device token", 401));
+    const device = repository.getDevice(row.device_id, mineId);
+    const view = buildDisplay({ device, telemetry: repository.latestTelemetry(device.deviceId), processed: repository.latestProcessed(device.deviceId), mineAssessment: repository.latestAssessment(mineId), rules: config.rules });
+    // ?format=text keeps a JSON parser off the microcontroller entirely: the firmware
+    // prints the body a line at a time.
+    if (request.query.format === "text") return response.type("text/plain").send(view.lines.join("\n"));
+    return send(response, ok(view));
+  });
+
   app.get("/api/v1/mine", dashboard, (_request, response) => send(response, ok(mineView(repository.getMine(mineId)))));
   app.get("/api/v1/locations", dashboard, (_request, response) => send(response, ok(repository.listLocations(mineId))));
   app.get("/api/v1/locations/:locationId", dashboard, (request, response) => { const location = repository.getLocation(request.params.locationId, mineId); return location ? send(response, ok({ ...location, devices: repository.listDevices(mineId).filter((d) => d.locationId === location.locationId) })) : send(response, fail("NOT_FOUND", "Location not found", 404)); });
@@ -62,7 +78,7 @@ export function createApp({ config, repository, deviceService, queue, processing
   app.get("/api/v1/mine/state", dashboard, (_request, response) => {
     const mine=repository.getMine(mineId); const devices=repository.listDevices(mineId); const assessment=repository.latestAssessment(mineId) || {riskLevel:"normal",status:"normal",priority:"normal",confidence:null,trend:"unknown",affectedLocations:[]};
     const deviceViews=devices.map((device)=>{const telemetry=repository.latestTelemetry(device.deviceId); const processed=repository.latestProcessed(device.deviceId); return {deviceId:device.deviceId,location:{locationId:device.locationId,name:device.locationName,zone:device.zone},status:device.status,active:device.active,lastSeen:device.lastSeen,lastTelemetryAt:device.lastTelemetryAt,lastIp:device.lastIp,battery:device.battery,firmwareVersion:device.firmwareVersion,telemetry:telemetry?.payload?.data || null,processedData:processed?.normalizedData || null,assessment:processed?.assessment || {riskLevel:"normal",confidence:null}};});
-    return send(response,ok({mine:mineView(mine),overall:{riskLevel:assessment.riskLevel,status:assessment.status,priority:assessment.priority},assessment,devices:deviceViews,alerts:repository.listAlerts(mineId),summary:{devices:{total:devices.length,online:devices.filter(d=>d.status==="online").length,offline:devices.filter(d=>d.status!=="online").length},locations:{total:repository.listLocations(mineId).length,affected:new Set((assessment.affectedLocations||[]).map(x=>x.locationId)).size},telemetryCount:repository.telemetryCount(mineId)},lastUpdated:assessment.processedAt || assessment.createdAt || null}));
+    return send(response,ok({mine:mineView(mine),overall:{riskLevel:assessment.riskLevel,status:assessment.status,priority:assessment.priority},assessment,devices:deviceViews,alerts:repository.listAlerts(mineId),rules:config.rules.filter((rule)=>rule&&typeof rule.sensor==="string").map((rule)=>({sensor:rule.sensor,warning:Number(rule.warning),critical:Number.isFinite(Number(rule.critical))?Number(rule.critical):null,operator:rule.operator==="lte"?"lte":"gte",unit:rule.unit||null,code:rule.code||null})),summary:{devices:{total:devices.length,online:devices.filter(d=>d.status==="online").length,offline:devices.filter(d=>d.status!=="online").length},locations:{total:repository.listLocations(mineId).length,affected:new Set((assessment.affectedLocations||[]).map(x=>x.locationId)).size},telemetryCount:repository.telemetryCount(mineId)},lastUpdated:assessment.processedAt || assessment.createdAt || null}));
   });
   const dashboardDist = path.resolve(process.cwd(), "dashboard/dist");
   if (fs.existsSync(dashboardDist)) {

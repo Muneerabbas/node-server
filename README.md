@@ -116,6 +116,29 @@ Telemetry follows: validate → identify registered device/mine/location → per
 
 `MLProcessor` defines `predict(input)`. `LocalMLProcessor` loads a local JavaScript adapter from `ML_MODEL_PATH` whose module exports `predict(input)`. This is an integration boundary for a real ONNX, TensorFlow Lite, Python, or other local model adapter. No fake predictions are generated. Without a configured working adapter, ML is reported unavailable and collection/rules/dashboard continue working. The intended people/rescue estimates remain `null` until a validated model supplies them.
 
+## ESP32 device display
+
+Each node can show the gateway's verdict on its own screen. The gateway decides and formats; the device prints. No thresholds and no JSON parser live on the microcontroller, so changing a limit on the Pi changes every node's screen.
+
+```sh
+curl 'http://localhost:3000/api/v1/devices/ESP32-002/display?format=text'
+```
+
+```text
+NORTH TUNNEL
+RISK CRITICAL
+CO 25.6  CO2 1764
+CH4 1.4%LEL  O2 18.8%
+T 31.9C  BAT 79.6%
+! CO OVER LIMIT
+```
+
+Lines are capped at 21 characters for a 128x64 SSD1306 at the 6x8 font. Drop `?format=text` for the structured payload (`risk`, `banner`, `prediction`, `readings`, `lines`) if the device has a richer display. The route authenticates as a **device** (`x-device-token`), not with the dashboard token, and a device may only ask about itself.
+
+The preventive warning is the reason this exists: a node shows `! CH4 LIMIT 14MIN` and `* CAUTION *` while the reading is still under its limit, so the person at the face gets the lead time without a dashboard they cannot reach. A mine-wide critical raised anywhere reaches a node that is itself normal.
+
+`firmware/esp32-display/esp32-display.ino` is a complete working node: Wi-Fi, telemetry POST, and the display poll, using Adafruit SSD1306 + GFX. Set the Wi-Fi, gateway address and device id at the top. Lines the gateway marks urgent (`!` or `*`) render inverted, and the last good screen is held if the gateway goes unreachable rather than blanking.
+
 ## Offline detection
 
 Devices become offline after `DEVICE_OFFLINE_TIMEOUT_SECONDS` without telemetry. The status is stored and a WebSocket status event is broadcast. A later telemetry packet changes the device back to online.

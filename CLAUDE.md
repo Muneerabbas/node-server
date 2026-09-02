@@ -66,6 +66,10 @@ The shipped adapter is the preventive half of the system. The rules engine is re
 - `MODEL_MIN_CONFIDENCE` (default 0.35) drops trends fitted through noise into `discarded` instead of alerting on them.
 - Dashboards: `MineMap.jsx`, `SensorChart.jsx` and `RiskProjection.jsx` are shared by both `App` (main.jsx) and `DemoApp`. The map lays out any registered location; the projection chart renders `assessment.factors` for the most urgent device and marks elapsed windows expired.
 
+## ESP32 display
+
+`src/display.js` builds what a node renders on its own OLED; `GET /api/v1/devices/:deviceId/display` serves it, with `?format=text` returning newline-separated lines so the firmware needs no JSON parser. Formatting decisions (line width, abbreviations, which reading wins) belong here, never in firmware — a limit change on the Pi must reach every screen without a reflash. Lines are capped at 21 chars (`WIDTH`); `test/display.test.js` enforces that. The route uses **device** auth, not the dashboard token.
+
 ## Dashboard visual system
 
 - Charts are **Recharts**; do not hand-roll SVG plots alongside them.

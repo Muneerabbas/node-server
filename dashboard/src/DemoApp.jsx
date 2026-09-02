@@ -41,7 +41,7 @@ export default function DemoApp() {
       <section className="demo-summary"><div><span>Scenario status</span><strong className={riskClass(overall)}>{pretty(overall)}</strong><small>{state?.summary?.telemetryCount || 0} readings stored</small></div><div><span>Devices online</span><strong>{state?.summary?.devices?.online ?? 0}/{state?.summary?.devices?.total ?? 0}</strong><small>Simulator nodes</small></div><div><span>Critical alerts</span><strong className="demo-risk-critical">{critical}</strong><small>Deduplicated active alerts</small></div><div><span>Warnings</span><strong className="demo-risk-warning">{warning}</strong><small>Configured rule findings</small></div></section>
       <MineMap devices={devices} selectedDevice={selected?.deviceId} onSelect={setSelectedDevice} />
       <section className="demo-control"><div><span className="demo-kicker">Telemetry explorer</span><h2>Sensor trends</h2><p>Choose a simulated ESP32 to inspect its changing readings.</p></div><label>Device<select value={selected?.deviceId || ""} onChange={(event) => setSelectedDevice(event.target.value)}>{devices.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.deviceId} · {device.location?.name}</option>)}</select></label></section>
-      <RiskProjection device={selected} history={histories[selected?.deviceId] || []} />
+      <RiskProjection device={selected} history={histories[selected?.deviceId] || []} rules={state?.rules || []} />
       <section className="demo-charts">
         <SensorChart sensor="gas.co" title="Carbon monoxide" unit="ppm" data={chart("gas.co")} />
         <SensorChart sensor="gas.co2" title="Carbon dioxide" unit="ppm" data={chart("gas.co2")} />

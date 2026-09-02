@@ -1,0 +1,23 @@
+{
+  "name": "node-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A small Express Node.js server",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "dev:demo": "node --watch scripts/start-demo-server.js",
+    "test": "node --test",
+    "simulate:esp32": "node scripts/simulate-esp32.js",
+    "simulate:esp32:risky": "SIMULATOR_SCENARIO=risky SIMULATOR_INTERVAL_MS=3000 node scripts/simulate-esp32.js",
+    "build:dashboard": "npm run build --prefix dashboard"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^17.4.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.7.0",
+    "ws": "^8.21.3"
+  }
+}

@@ -1,0 +1,17 @@
+[Unit]
+Description=Node.js server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dhruvspi5
+WorkingDirectory=/home/dhruvspi5/node-server
+EnvironmentFile=-/home/dhruvspi5/node-server/.env
+ExecStart=/home/dhruvspi5/.local/node-v22/bin/node /home/dhruvspi5/node-server/server.js
+Restart=on-failure
+RestartSec=3
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
